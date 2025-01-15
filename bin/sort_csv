@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# 使用方法チェック
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <csv_file> <column_number> <output_file>"
+  exit 1
+fi
+
+# 入力引数の取得
+csv_file=$1
+column_number=$2
+output_file=$3
+
+# ソート処理
+# -t ',' で区切り文字をカンマに指定
+# -k でソートするカラム番号を指定
+# ヘッダーを保持してソートするために `head -n 1` と `tail -n +2` を利用
+{
+  head -n 1 "$csv_file"
+  tail -n +2 "$csv_file" | sort -t ',' -k "$column_number" -n
+} > "$output_file"
+
+echo "Sorted CSV saved to $output_file 🎉"
+
