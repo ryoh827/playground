@@ -1,33 +1,35 @@
 # frozen_string_literal: true
 
-require 'net/http'
+require 'httpclient'
+require 'securerandom'
 require 'base64'
 require 'json'
 
-token = ENV['SWITCHBOT_TOKEN']
-secret = ENV['SWITCHBOT_SECRET']
-device_id = ENV['SWITCHBOT_DEVICE_ID']
+def get_metor_status
+  token = ENV['SWITCHBOT_TOKEN']
+  secret = ENV['SWITCHBOT_SECRET']
+  device_id = ENV['SWITCHBOT_DEVICE_ID']
 
-# to milliseconds
-t = (Time.now.to_f * 1000).to_i
-nonce = SecureRandom.uuid
+  # to milliseconds
 
-sign = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), secret, "#{token}#{t}#{nonce}")
-base64_sign = Base64.strict_encode64(sign)
+  t = (Time.now.to_f * 1000).to_i
+  nonce = SecureRandom.uuid
+  payload = "#{token}#{t}#{nonce}"
+  sign = Base64.strict_encode64(OpenSSL::HMAC.digest('sha256', secret, payload))
 
-client = Net::HTTP.new('api.switch-bot.com', 443)
-client.use_ssl = true
+  header = {
+    'Authorization' => token,
+    'sign' => sign,
+    'nonce' => nonce,
+    't' => t.to_s
+  }
 
-headers = {
-  'Content-Type' => 'application/json',
-  'charset' => 'utf-8',
-  'Authorization' => token,
-  'sign' => base64_sign,
-  'nonce' => nonce,
-  't' => t.to_s
-}
+  client = HTTPClient.new
+  url = "https://api.switch-bot.com/v1.1/devices/#{device_id}/status"
+  response = client.get(url, header:)
 
-res = client.get("/v1.1/devices/#{device_id}/status", headers)
-# res = client.get('/v1.1/devices', headers)
+  body = JSON.parse(response.body)['body']
+end
 
-pp JSON.parse(res.body)
+status = get_metor_status
+pp status
