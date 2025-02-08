@@ -1,0 +1,5 @@
+[env]
+mise.file = ".env"
+
+[tools]
+ruby = "3.5-dev"
