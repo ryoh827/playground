@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if ! command -v gh &> /dev/null; then
+  echo "Error: GitHub CLI (gh) is not installed." >&2
+  exit 1
+fi
+
+if ! gh auth status &> /dev/null; then
+  echo "Error: You are not logged into GitHub CLI. Please run 'gh auth login'." >&2
+  exit 1
+fi
+
+OPEN_IN_BROWSER=false
+while getopts "w" opt; do
+  case ${opt} in
+    w )
+      OPEN_IN_BROWSER=true
+      ;;
+    * )
+      echo "Usage: $0 [-w]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+PR_LIST=$(gh search prs --review-requested "@me" --state open --json number,title,url,repository -q '.[]')
+
+SELECTED_PR_URL=$(echo "$PR_LIST" | shuf -n 1)
+
+if [ -z "$PR_LIST" ]; then
+  echo "No open PRs with review requests found for you."
+  exit 0
+fi
+
+PR_NUMBER=$(echo $SELECTED_PR_URL | jq -r '.number')
+PR_TITLE=$(echo $SELECTED_PR_URL | jq -r '.title')
+PR_URL=$(echo $SELECTED_PR_URL | jq -r '.url')
+PR_REPO=$(echo $SELECTED_PR_URL | jq -r '.repository.nameWithOwner')
+
+echo "PR info: #$PR_NUMBER: $PR_TITLE in $PR_REPO"
+echo "url: $PR_URL"
+
+if [ "$OPEN_IN_BROWSER" = true ]; then
+  echo "Opening PR in browser..."
+  open $PR_URL
+fi
+
